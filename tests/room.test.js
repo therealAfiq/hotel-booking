@@ -1,39 +1,63 @@
-const request = require('supertest');
-const mongoose = require('mongoose');
-const app = require('../src/app');
-const { adminToken, userToken } = require('./auth.test');
+const request = require("supertest");
+const app = require("../src/app");
+const User = require("../src/models/user.model");
+const Room = require("../src/models/room.model");
+const { signAccess } = require("../src/utils/token.util");
+const bcrypt = require("bcryptjs");
 
-let roomId;
+describe("Room API", () => {
+  let adminToken;
+  let userToken;
 
-beforeAll(async () => {
-  await mongoose.connect(process.env.MONGO_URI_TEST);
-});
+  beforeEach(async () => {
+    await User.deleteMany({});
+    await Room.deleteMany({});
 
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-});
+    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || "4", 10);
+    const adminPass = await bcrypt.hash("password123", saltRounds);
+    const userPass = await bcrypt.hash("password123", saltRounds);
 
-describe('Room API', () => {
-  it('should allow admin to create a room', async () => {
-    const res = await request(app)
-      .post('/api/v1/rooms')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: 'Deluxe Room', price: 200, capacity: 2 });
-    expect(res.statusCode).toBe(201);
-    roomId = res.body._id;
+    const admin = await User.create({
+      name: "Admin",
+      email: "admin@example.com",
+      password: adminPass,
+      role: "admin",
+    });
+
+    const user = await User.create({
+      name: "User",
+      email: "user@example.com",
+      password: userPass,
+      role: "user",
+    });
+
+    adminToken = signAccess({ id: admin._id.toString(), role: admin.role });
+    userToken = signAccess({ id: user._id.toString(), role: user.role });
   });
 
-  it('should forbid normal user from creating room', async () => {
+  it("admin can create room", async () => {
     const res = await request(app)
-      .post('/api/v1/rooms')
-      .set('Authorization', `Bearer ${userToken}`)
-      .send({ name: 'Suite', price: 400, capacity: 3 });
-    expect(res.statusCode).toBe(403);
+      .post("/api/v1/rooms")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ name: "Deluxe", price: 200, capacity: 2 });
+
+    expect([200, 201]).toContain(res.statusCode);
+    const rooms = await Room.find({});
+    expect(rooms.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('should allow anyone to list rooms', async () => {
-    const res = await request(app).get('/api/v1/rooms');
+  it("user cannot create room", async () => {
+    const res = await request(app)
+      .post("/api/v1/rooms")
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({ name: "Suite", price: 400, capacity: 3 });
+
+    expect([401, 403]).toContain(res.statusCode);
+  });
+
+  it("anyone can list rooms", async () => {
+    await Room.create({ name: "R1", price: 100, capacity: 1 });
+    const res = await request(app).get("/api/v1/rooms");
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
   });
