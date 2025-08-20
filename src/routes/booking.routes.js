@@ -1,11 +1,15 @@
+// src/routes/booking.routes.js
 const express = require('express');
 const router = express.Router();
+const auth = require('../middlewares/auth.middleware');
+const { validateBody } = require('../utils/validator.util');
 const bookingController = require('../controllers/booking.controller');
-const authMiddleware = require('../middleware/auth.middleware');
 
-router.post('/', authMiddleware, bookingController.createBooking);
-router.get('/', authMiddleware, bookingController.getUserBookings);
-router.get('/all', authMiddleware, bookingController.getAllBookings);
-router.delete('/:id', authMiddleware, bookingController.cancelBooking);
+router.use(auth);
+
+router.post('/', validateBody(['roomId', 'checkIn', 'checkOut']), bookingController.createBooking);
+router.get('/', bookingController.listBookings);
+router.get('/:id', bookingController.getBookingById);
+router.delete('/:id', bookingController.cancelBooking);
 
 module.exports = router;

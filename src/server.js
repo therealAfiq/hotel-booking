@@ -1,29 +1,24 @@
-require('dotenv').config();
+// src/server.js
 const mongoose = require('mongoose');
 const app = require('./app');
+const config = require('./config');
+const logger = require('./utils/logger.util');
 
-const port = process.env.PORT || 3000;
+async function start() {
+  try {
+    await mongoose.connect(config.mongoUri, {
+      // modern driver ignores useNewUrlParser/useUnifiedTopology
+      maxPoolSize: 10,
+    });
+    logger.info('✅ Connected to MongoDB');
 
-// Singleton MongoDB connection
-const connectDB = async () => {
-  if (mongoose.connection.readyState === 0) {
-    try {
-      await mongoose.connect(process.env.MONGO_URI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      });
-      console.log('✅ Connected to MongoDB');
-    } catch (err) {
-      console.error('MongoDB connection error:', err);
-      process.exit(1);
-    }
+    app.listen(config.port, () => {
+      logger.info(`🚀 Server running on port ${config.port}`);
+    });
+  } catch (err) {
+    logger.error('Failed to start server', err);
+    process.exit(1);
   }
-};
+}
 
-// Start server
-const startServer = async () => {
-  await connectDB();
-  app.listen(port, () => console.log(`🚀 Server running on port ${port}`));
-};
-
-startServer();
+start();

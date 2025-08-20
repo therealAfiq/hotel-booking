@@ -1,28 +1,59 @@
+// src/app.js
 const express = require('express');
+const helmet = require('helmet');
+const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const morgan = require('morgan');
+const config = require('./config');
+const limiter = require('./middlewares/rateLimiter.middleware');
+const errorHandler = require('./middlewares/error.middleware');
+const logger = require('./utils/logger.util');
 
-// Routes
+// Routers
 const authRoutes = require('./routes/auth.routes');
-const bookingRoutes = require('./routes/booking.routes');
+const userRoutes = require('./routes/user.routes');
 const roomRoutes = require('./routes/room.routes');
+const bookingRoutes = require('./routes/booking.routes');
 const paymentRoutes = require('./routes/payment.routes');
+const paymentController = require('./controllers/payment.controller'); // for webhook
 
 const app = express();
 
-// Middleware
-app.use(morgan('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+// Security + rate-limit
+app.use(helmet());
+app.use(limiter);
 
-// Routes
+// CORS (adjust as needed)
+app.use(cors({
+  origin: [config.urls.client, 'http://localhost:3000', 'http://localhost:5173'],
+  credentials: true,
+}));
+
+// Cookies
+app.use(cookieParser(config.cookieSecret));
+
+// Stripe webhook must be RAW and must come BEFORE express.json()
+app.post('/api/v1/payments/webhook', express.raw({ type: 'application/json' }), paymentController.stripeWebhook);
+
+// JSON body after webhook
+app.use(express.json());
+
+// Simple request logger
+app.use((req, _res, next) => {
+  logger.info(`${req.method} ${req.originalUrl}`);
+  next();
+});
+
+// Mount API routes
 app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/bookings', bookingRoutes);
+app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/rooms', roomRoutes);
+app.use('/api/v1/bookings', bookingRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 
-// Health check
-app.get('/', (req, res) => res.send('API is running'));
+// Health
+app.get('/health', (_req, res) => res.json({ ok: true }));
+
+// Error handler (last)
+app.use(errorHandler);
 
 module.exports = app;

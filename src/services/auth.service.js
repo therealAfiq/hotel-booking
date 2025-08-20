@@ -1,46 +1,54 @@
 // src/services/auth.service.js
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
 const User = require('../models/user.model');
+const { signAccess, signRefresh, verifyRefresh } = require('../utils/token.util');
 
-const BCRYPT_SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 10;
-
-// Helper to generate JWT tokens
-function generateTokens(user) {
-  const payload = { id: user._id, role: user.role, email: user.email };
-
-  const accessToken = jwt.sign(payload, process.env.JWT_ACCESS_SECRET, { expiresIn: '1h' });
-  const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
-
-  return {
-    access: { token: accessToken, expires: '1h' },
-    refresh: { token: refreshToken, expires: '7d' },
-  };
+async function register({ name, email, password, role }) {
+  const existing = await User.findOne({ email });
+  if (existing) throw new Error('Email already exists');
+  const user = await User.create({ name, email, password, role });
+ 
+  return { id: user._id, name: user.name, email: user.email, role: user.role };
 }
 
-async function register(name, email, password, role = 'user') {
-  const existingUser = await User.findOne({ email });
-  if (existingUser) throw new Error('User already exists');
-
-  const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
-
-  const user = await User.create({ name, email, password: hashedPassword, role });
-
-  const tokens = generateTokens(user);
-
-  return { user, tokens };
-}
-
-async function login(email, password) {
+async function login({ email, password }, res) {
   const user = await User.findOne({ email });
   if (!user) throw new Error('Invalid credentials');
 
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) throw new Error('Invalid credentials');
+  const match = await user.comparePassword(password);
+  if (!match) throw new Error('Invalid credentials');
 
-  const tokens = generateTokens(user);
+  const payload = { id: user._id.toString(), role: user.role };
+  const accessToken = signAccess(payload);
+  const refreshToken = signRefresh(payload);
 
-  return { user, tokens };
+  // also return in JSON for Postman, and set signed cookies
+  res.cookie('accessToken', accessToken, { httpOnly: true, sameSite: 'lax', signed: true });
+  res.cookie('refreshToken', refreshToken, { httpOnly: true, sameSite: 'lax', signed: true });
+
+  return {
+    user: { id: user._id, name: user.name, email: user.email, role: user.role },
+    tokens: { access: accessToken, refresh: refreshToken },
+  };
 }
 
-module.exports = { register, login };
+async function refresh(req, res) {
+  const token = req.signedCookies?.refreshToken || req.cookies?.refreshToken;
+  if (!token) throw new Error('No refresh token');
+
+  const payload = verifyRefresh(token);
+  const accessToken = signAccess({ id: payload.id, role: payload.role });
+  const refreshToken = signRefresh({ id: payload.id, role: payload.role });
+
+  res.cookie('accessToken', accessToken, { httpOnly: true, sameSite: 'lax', signed: true });
+  res.cookie('refreshToken', refreshToken, { httpOnly: true, sameSite: 'lax', signed: true });
+
+  return { access: accessToken, refresh: refreshToken };
+}
+
+async function logout(res) {
+  res.clearCookie('accessToken');
+  res.clearCookie('refreshToken');
+  return { success: true };
+}
+
+module.exports = { register, login, refresh, logout };

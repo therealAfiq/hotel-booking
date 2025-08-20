@@ -1,7 +1,8 @@
+// src/utils/logger.util.js
 function log(level, message, ...args) {
-  console.log(`[${level.toUpperCase()}]`, message, ...args);
+  // keep simple; you can swap for pino/winston later
+  console.log(`[${new Date().toISOString()}] [${level.toUpperCase()}]`, message, ...args);
 }
-
 module.exports = {
   info: (msg, ...args) => log('info', msg, ...args),
   warn: (msg, ...args) => log('warn', msg, ...args),
