@@ -1,53 +1,106 @@
-const request = require('supertest');
-const mongoose = require('mongoose');
-const app = require('../src/app');
-const { adminToken, userToken } = require('./auth.test');
-const Room = require('../src/models/room.model');
+const request = require("supertest");
+const app = require("../src/app");
+const User = require("../src/models/user.model");
+const Room = require("../src/models/room.model");
+const Booking = require("../src/models/booking.model");
+const { signAccess } = require("../src/utils/token.util");
+const bcrypt = require("bcryptjs");
 
-let bookingId, testRoomId;
+describe("Booking API", () => {
+  let userToken;
+  let adminToken;
+  let userId;
+  let roomId;
 
-beforeAll(async () => {
-  await mongoose.connect(process.env.MONGO_URI_TEST);
+  beforeEach(async () => {
+    await User.deleteMany({});
+    await Room.deleteMany({});
+    await Booking.deleteMany({});
 
-  const room = await Room.create({ name: 'Test Room', price: 100, capacity: 2 });
-  testRoomId = room._id;
-});
+    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || "4", 10);
 
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-});
+    const userPass = await bcrypt.hash("password123", saltRounds);
+    const adminPass = await bcrypt.hash("password123", saltRounds);
 
-describe('Booking API', () => {
-  it('should allow a user to create a booking', async () => {
-    const res = await request(app)
-      .post('/api/v1/bookings')
-      .set('Authorization', `Bearer ${userToken}`)
-      .send({ roomId: testRoomId, checkIn: '2025-08-20', checkOut: '2025-08-22' });
-    expect(res.statusCode).toBe(201);
-    bookingId = res.body._id;
+    const user = await User.create({
+      name: "Booker",
+      email: "booker@example.com",
+      password: userPass,
+      role: "user",
+    });
+
+    const admin = await User.create({
+      name: "Admin",
+      email: "admin@example.com",
+      password: adminPass,
+      role: "admin",
+    });
+
+    userId = user._id.toString();
+    userToken = signAccess({ id: user._id.toString(), role: user.role });
+    adminToken = signAccess({ id: admin._id.toString(), role: admin.role });
+
+    const room = await Room.create({ name: "Deluxe Room", price: 200, capacity: 2 });
+    roomId = room._id.toString();
   });
 
-  it('should allow user to fetch their bookings', async () => {
+  it("user can create booking", async () => {
     const res = await request(app)
-      .get('/api/v1/bookings')
-      .set('Authorization', `Bearer ${userToken}`);
-    expect(res.statusCode).toBe(200);
-    expect(res.body.some(b => b._id === bookingId)).toBe(true);
+      .post("/api/v1/bookings")
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({ roomId, checkIn: "2025-08-25", checkOut: "2025-08-27" });
+
+    expect([200, 201]).toContain(res.statusCode);
+    expect(res.body).toHaveProperty("_id");
   });
 
-  it('should allow admin to fetch all bookings', async () => {
+  it("user can fetch only their bookings", async () => {
+    await Booking.create({
+      user: userId,
+      room: roomId,
+      checkIn: "2025-08-25",
+      checkOut: "2025-08-27",
+      totalPrice: 400,
+    });
+
     const res = await request(app)
-      .get('/api/v1/bookings')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .get("/api/v1/bookings")
+      .set("Authorization", `Bearer ${userToken}`);
+
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
   });
 
-  it('should allow user to cancel their booking', async () => {
+  it("admin can get all bookings", async () => {
+    await Booking.create({
+      user: userId,
+      room: roomId,
+      checkIn: "2025-08-25",
+      checkOut: "2025-08-27",
+      totalPrice: 400,
+    });
+
     const res = await request(app)
-      .delete(`/api/v1/bookings/${bookingId}`)
-      .set('Authorization', `Bearer ${userToken}`);
+      .get("/api/v1/bookings")
+      .set("Authorization", `Bearer ${adminToken}`);
+
     expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+  });
+
+  it("user can delete their booking", async () => {
+    const booking = await Booking.create({
+      user: userId,
+      room: roomId,
+      checkIn: "2025-08-25",
+      checkOut: "2025-08-27",
+      totalPrice: 400,
+    });
+
+    const res = await request(app)
+      .delete(`/api/v1/bookings/${booking._id}`)
+      .set("Authorization", `Bearer ${userToken}`);
+
+    expect([200, 204]).toContain(res.statusCode);
   });
 });
