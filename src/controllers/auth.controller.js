@@ -1,42 +1,40 @@
 // src/controllers/auth.controller.js
 const authService = require('../services/auth.service');
 
-const register = async (req, res) => {
+async function register(req, res) {
   try {
-    const { name, email, password, role } = req.body;
-    const { user, tokens } = await authService.register(name, email, password, role);
-
-    // Set cookie for browser usage
-    res.cookie('token', tokens.access.token, {
-      httpOnly: true,
-      signed: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
-    });
-
-    res.status(201).json({ user, tokens });
+    const user = await authService.register(req.body);
+    res.status(201).json({ user });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ message: err.message });
   }
-};
+}
 
-const login = async (req, res) => {
+async function login(req, res) {
   try {
-    const { email, password } = req.body;
-    const { user, tokens } = await authService.login(email, password);
-
-    // Set cookie for browser usage
-    res.cookie('token', tokens.access.token, {
-      httpOnly: true,
-      signed: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
-    });
-
-    res.status(200).json({ user, tokens });
+    const result = await authService.login(req.body, res);
+    res.json(result);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ message: err.message });
   }
-};
+}
 
-module.exports = { register, login };
+async function refresh(req, res) {
+  try {
+    const tokens = await authService.refresh(req, res);
+    res.json({ tokens });
+  } catch (err) {
+    res.status(401).json({ message: err.message });
+  }
+}
+
+async function logout(req, res) {
+  try {
+    await authService.logout(res);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+}
+
+module.exports = { register, login, refresh, logout };

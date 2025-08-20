@@ -1,12 +1,15 @@
+// src/routes/room.routes.js
 const express = require('express');
 const router = express.Router();
+const auth = require('../middlewares/auth.middleware');
+const { requireRole } = require('../middlewares/role.middleware');
+const { validateBody } = require('../utils/validator.util');
 const roomController = require('../controllers/room.controller');
-const authMiddleware = require('../middleware/auth.middleware');
 
-// Protected route for admin to create room
-router.post('/', authMiddleware, roomController.createRoom);
-
-// Public route to list rooms
-router.get('/', roomController.getRooms);
+router.post('/', auth, requireRole('admin'), validateBody(['name', 'price', 'capacity']), roomController.createRoom);
+router.get('/', roomController.listRooms);
+router.get('/:id', roomController.getRoomById);
+router.patch('/:id', auth, requireRole('admin'), roomController.updateRoom);
+router.delete('/:id', auth, requireRole('admin'), roomController.deleteRoom);
 
 module.exports = router;

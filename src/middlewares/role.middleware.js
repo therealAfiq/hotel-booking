@@ -1,6 +1,4 @@
 // src/middlewares/role.middleware.js
-
-// Factory: allow a list of roles
 function allowRoles(roles = []) {
   return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
@@ -9,10 +7,7 @@ function allowRoles(roles = []) {
     next();
   };
 }
-
-// Single-role helper
 function requireRole(role) {
   return allowRoles([role]);
 }
-
 module.exports = { allowRoles, requireRole };
