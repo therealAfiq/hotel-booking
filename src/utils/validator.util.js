@@ -1,20 +1,32 @@
 // src/utils/validator.util.js
-function validateBody(requiredFields = []) {
+const Joi = require('joi');
+
+/**
+ * Validate an array of required fields (simple check)
+ * Usage: validateBody(['name', 'email'])
+ */
+function validateBody(fields = []) {
   return (req, res, next) => {
-    const missing = requiredFields.filter((f) => req.body[f] == null || req.body[f] === '');
+    const missing = fields.filter(f => req.body[f] === undefined);
     if (missing.length) {
-      return res.status(400).json({
-        success: false,
-        message: `Missing required fields: ${missing.join(', ')}`,
-      });
+      return res.status(400).json({ error: `Missing fields: ${missing.join(', ')}` });
     }
     next();
   };
 }
-function isEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+/**
+ * Validate a Joi schema
+ * Usage: validate(schema)
+ */
+function validate(schema) {
+  return (req, res, next) => {
+    const { error } = schema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+    next();
+  };
 }
-function isStrongPassword(value) {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(value);
-}
-module.exports = { validateBody, isEmail, isStrongPassword };
+
+module.exports = { validateBody, validate };
