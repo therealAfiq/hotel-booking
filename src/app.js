@@ -3,6 +3,7 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const swaggerDocs = require('./docs/swagger');
 const config = require('./config');
 const limiter = require('./middlewares/rateLimiter.middleware');
 const errorHandler = require('./middlewares/error.middleware');
@@ -53,7 +54,10 @@ app.use('/api/v1/payments', paymentRoutes);
 // Health
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
+swaggerDocs(app);
+
 // Error handler (last)
 app.use(errorHandler);
+
 
 module.exports = app;
