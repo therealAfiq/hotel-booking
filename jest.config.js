@@ -8,5 +8,7 @@ module.exports = {
   testMatch: ['**/tests/**/*.test.js'],
   clearMocks: true,
   restoreMocks: true,
-  testTimeout: 30000
+  testTimeout: 30000,
+  globalSetup: './tests/globalSetup.js',
+  globalTeardown: './tests/globalTeardown.js'
 };
