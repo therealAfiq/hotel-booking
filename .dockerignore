@@ -1,0 +1,27 @@
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Env files (handled via docker-compose)
+.env
+.env.test
+.env.prod
+
+# Logs
+logs
+*.log
+
+# OS / Editor junk
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+
+# Tests
+coverage
+tests
+
+# Git
+.git
+.gitignore

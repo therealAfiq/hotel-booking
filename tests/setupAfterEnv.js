@@ -1,14 +1,12 @@
-// tests/setupAfterEnv.js
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 beforeAll(async () => {
-  const uri = process.env.MONGO_URI_TEST || "mongodb://127.0.0.1:27017/testdb";
-  await mongoose.connect(uri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  await mongoose.connect(global.__MONGO_URI__);
 });
 
 afterAll(async () => {
+  await mongoose.connection.dropDatabase();
   await mongoose.connection.close();
 });
+
+//This ensures each test file connects to the in-memory MongoDB automatically
