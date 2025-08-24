@@ -13,25 +13,13 @@ describe('Admin Routes', () => {
     // Clean DB
     await User.deleteMany({});
 
-    // Create an admin user directly in DB
-    const admin = await User.create({
-      name: 'Super Admin',
-      email: 'admin@example.com',
-      password: 'AdminPass123!',
-      role: 'admin',
-    });
+   const admin = await User.findOne({ email: process.env.SEED_ADMIN_EMAIL });
 
-    // Create a normal user directly in DB
-    const user = await User.create({
-      name: 'Normal User',
-      email: 'user@example.com',
-      password: 'UserPass123!',
-      role: 'user',
-    });
+  if (!admin) throw new Error("Seeded admin not found. Make sure globalSetup.js ran.");
+
 
     // Generate tokens for both
     adminToken = signAccess({ id: admin._id, role: 'admin' });
-    userToken = signAccess({ id: user._id, role: 'user' });
   });
 
  

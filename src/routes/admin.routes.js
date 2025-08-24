@@ -7,6 +7,54 @@ const { adminRegisterSchema } = require('../validators/auth.schemas');
 const  authenticate  = require('../middlewares/auth.middleware');
 const { requireRole } = require('../middlewares/role.middleware');
 
+/**
+ * @openapi
+ * /admin/register:
+ *   post:
+ *     summary: Register a new user (admin-only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *               - role
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: John Doe
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: johndoe@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: StrongPass123
+ *               role:
+ *                 type: string
+ *                 enum: [user, admin]
+ *                 example: admin
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized (invalid or missing token)
+ *       403:
+ *         description: Forbidden (not an admin)
+ */
+
 // ✅ Only admins can access this
 router.post(
   '/register',
