@@ -1,7 +1,7 @@
 // src/routes/admin.routes.js
 const express = require('express');
 const router = express.Router();
-const { createUserByAdmin } = require('../controllers/admin.controller');
+const { createUserByAdmin, getAllUsers } = require('../controllers/admin.controller');
 const validate = require('../middlewares/validate.middleware');
 const { adminRegisterSchema } = require('../validators/auth.schemas');
 const  authenticate  = require('../middlewares/auth.middleware');
@@ -63,5 +63,38 @@ router.post(
   validate(adminRegisterSchema),
   createUserByAdmin
 );
+
+/**
+ * @openapi
+ * /admin/users:
+ *   get:
+ *     summary: Get all users (admin-only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *                   role:
+ *                     type: string
+ *       401:
+ *         description: Unauthorized (not logged in)
+ *       403:
+ *         description: Forbidden (not an admin)
+ */
+router.get('/users', authenticate, requireRole('admin'), getAllUsers);
 
 module.exports = router;

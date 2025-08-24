@@ -1,35 +1,30 @@
-const mongoose = require('mongoose');
+// tests/globalSetup.js
 const { MongoMemoryServer } = require('mongodb-memory-server');
+const mongoose = require('mongoose');
 const User = require('../src/models/user.model');
-
-let mongoServer;
+const dotenv = require('dotenv');
 
 module.exports = async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
+  // Load test env
+  dotenv.config({ path: '.env.test' });
 
-  global.__MONGO_URI__ = mongoUri;
+  // Start in-memory Mongo
+  const mongoServer = await MongoMemoryServer.create();
+  const uri = mongoServer.getUri();
+
+  // Attach to global for tests
+  global.__MONGO_URI__ = uri;
   global.__MONGO_SERVER__ = mongoServer;
 
-  await mongoose.connect(mongoUri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
-  // Seed an admin for admin-only route tests
-  const adminEmail = process.env.SEED_ADMIN_EMAIL;
-  const adminExists = await User.findOne({ email: adminEmail });
-  if (!adminExists) {
-    await User.create({
-      name: 'Test Admin',
-      email: adminEmail,
-      password: process.env.SEED_ADMIN_PASSWORD ,
-      role: 'admin',
-    });
-  }
+  // Connect mongoose
+  await mongoose.connect(uri);
 
-  // Optional: cleanup after all tests
-  global.__MONGO_CLEANUP__ = async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
-  };
+  // Seed admin
+  await User.deleteMany({}); // clean up just in case
+  await User.create({
+    name: 'Admin',
+    email: "admin@test.com",
+    password: "password123",
+    role: 'admin',
+  });
 };
