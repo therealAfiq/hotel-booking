@@ -7,12 +7,19 @@ let adminToken;
 let userToken;
 
 beforeAll(async () => {
-  // Make sure admin exists
-  const admin = await User.findOne({ email: process.env.SEED_ADMIN_EMAIL });
-  if (!admin) throw new Error('Admin not found in DB!');
+  // Ensure admin exists
+  let admin = await User.findOne({ email: process.env.SEED_ADMIN_EMAIL });
+  if (!admin) {
+    admin = await User.create({
+      name: 'Admin User',
+      email: process.env.SEED_ADMIN_EMAIL,
+      password: process.env.SEED_ADMIN_PASSWORD || 'adminpassword',
+      role: 'admin',
+    });
+  }
   adminToken = signAccess({ userId: admin._id, role: 'admin' });
 
-  // Create a normal user
+  // Create a normal user for testing
   const user = await User.create({
     name: 'Normal User',
     email: 'user@example.com',
