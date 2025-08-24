@@ -21,10 +21,14 @@ module.exports = async () => {
 
   // Seed admin
   await User.deleteMany({}); // clean up just in case
+
+  const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@test.com';
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'password123';
+
   await User.create({
     name: 'Admin',
-    email: "admin@test.com",
-    password: "password123",
+    email: adminEmail,
+    password: adminPassword,
     role: 'admin',
   });
 };
