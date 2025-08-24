@@ -15,14 +15,14 @@ module.exports = async () => {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
-
   // Seed an admin for admin-only route tests
-  const adminExists = await User.findOne({ role: 'admin' });
+  const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@test.com';
+  const adminExists = await User.findOne({ email: adminEmail });
   if (!adminExists) {
     await User.create({
       name: 'Test Admin',
-      email: 'admin@test.com',
-      password: 'password123',
+      email: adminEmail,
+      password: process.env.SEED_ADMIN_PASSWORD || 'password123',
       role: 'admin',
     });
   }
