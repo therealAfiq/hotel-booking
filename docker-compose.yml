@@ -1,33 +1,15 @@
-version: "3.9"
-
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: project2_app
+  api:
+    image: daun104/project2-api:latest
     ports:
-      - "3000:3000"   # host:container
+      - "3000:3000"
     env_file:
-      - .env.prod     # Load secrets at runtime
+      - .env.docker
     depends_on:
       - mongo
-    restart: always
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
 
   mongo:
-    image: mongo:6.0
-    container_name: project2_mongo
+    image: mongo:6
     restart: always
     ports:
       - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS}
-    volumes:
-      - mongo_data:/data/db
-
-volumes:
-  mongo_data:

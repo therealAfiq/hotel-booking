@@ -16,7 +16,9 @@ const roomRoutes = require('./routes/room.routes');
 const bookingRoutes = require('./routes/booking.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const adminRoutes = require('./routes/admin.routes');
+const healthRoutes = require('./routes/health.routes');
 const paymentController = require('./controllers/payment.controller'); // for webhook
+
 
 const app = express();
 
@@ -52,6 +54,7 @@ app.use('/api/v1/rooms', roomRoutes);
 app.use('/api/v1/bookings', bookingRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api', healthRoutes);
 
 // Health
 app.get('/health', (_req, res) => res.json({ ok: true }));

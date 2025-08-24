@@ -1,20 +1,20 @@
-# Use official Node.js LTS image
-FROM node:20-alpine
+# Use official Node.js image
+FROM node:18
 
-# Set working directory
+# Set working directory inside container
 WORKDIR /usr/src/app
 
-# Copy package files first (better layer caching)
+# Copy only package files first (better caching for npm install)
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm install --production
 
-# Copy the rest of the app
+# Copy the rest of the application
 COPY . .
 
-# Expose port (your Express server listens on 5000 usually)
-EXPOSE 5000
+# Expose port (matches your app’s server.js / .env)
+EXPOSE 3000
 
-# Start the app
-CMD ["node", "src/server.js"]
+# Start app
+CMD ["npm", "start"]

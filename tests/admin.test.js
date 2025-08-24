@@ -1,28 +1,38 @@
-// tests/admin.test.js
 const request = require('supertest');
 const mongoose = require('mongoose');
+const dotenv = require('dotenv');
 const app = require('../src/app');
 const User = require('../src/models/user.model');
 const { signAccess } = require('../src/utils/token.util');
+
+// Load .env.test
+dotenv.config({ path: '.env.test' });
 
 describe('Admin Routes', () => {
   let adminToken;
   let userToken;
 
   beforeAll(async () => {
-    // Clean DB
-    await User.deleteMany({});
+    // Optional: clear non-admin users
+    await User.deleteMany({ role: 'user' });
 
-   const admin = await User.findOne({ email: process.env.SEED_ADMIN_EMAIL });
+    // Get seeded admin
+    const admin = await User.findOne({ email: process.env.SEED_ADMIN_EMAIL });
+    if (!admin) throw new Error("Seeded admin not found. Make sure globalSetup.js ran.");
 
-  if (!admin) throw new Error("Seeded admin not found. Make sure globalSetup.js ran.");
-
-
-    // Generate tokens for both
     adminToken = signAccess({ id: admin._id, role: 'admin' });
+
+    // Create a normal user token for testing forbidden access
+    const normalUser = await User.create({
+      name: 'Normal User',
+      email: 'user@test.com',
+      password: 'userpassword123',
+      role: 'user',
+    });
+
+    userToken = signAccess({ id: normalUser._id, role: 'user' });
   });
 
- 
   describe('POST /api/v1/admin/register', () => {
     it('should allow admin to register a new user', async () => {
       const res = await request(app)
