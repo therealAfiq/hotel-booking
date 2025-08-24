@@ -14,7 +14,7 @@ describe('Admin Routes', () => {
 
   beforeAll(async () => {
     // Optional: clear non-admin users
-    await User.deleteMany({ role: 'user' });
+    await User.deleteMany({ });
 
     // Get seeded admin
     const admin = await User.findOne({ email: process.env.SEED_ADMIN_EMAIL });
