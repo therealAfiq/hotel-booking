@@ -1,5 +1,15 @@
 // src/config/index.js
-require('dotenv').config();
+const dotenv = require('dotenv');
+
+// Load .env.prod in production, otherwise default to .env
+dotenv.config({
+  path:
+    process.env.NODE_ENV === 'production'
+      ? '.env.prod'
+      : process.env.NODE_ENV === 'test'
+      ? '.env.test'
+      : '.env',
+});
 
 const toInt = (v, def) => {
   const n = parseInt(v, 10);
@@ -19,8 +29,7 @@ module.exports = {
   jwt: {
     accessSecret:
       process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'access_secret',
-    refreshSecret:
-      process.env.JWT_REFRESH_SECRET || 'refresh_secret',
+    refreshSecret: process.env.JWT_REFRESH_SECRET || 'refresh_secret',
     accessExpires: process.env.JWT_ACCESS_EXPIRES_IN || '1h',
     refreshExpires: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   },
