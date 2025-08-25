@@ -27,7 +27,15 @@ app.use(helmet());
 app.use(limiter);
 
 // CORS (adjust as needed)
-app.use(cors({ origin: '*'}));
+app.use(cors({
+  origin: [
+    'https://hotel-booking-api.onrender.com', // 👈 your Render backend URL
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
+  credentials: true,
+}));
+
 
 
 // Cookies
