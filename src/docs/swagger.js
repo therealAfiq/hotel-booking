@@ -12,9 +12,6 @@ const options = {
     },
     servers: [
   {
-    url: "http://localhost:5000/api/v1", // local dev
-  },
-  {
     url: "https://hotel-booking-f1ei.onrender.com/api/v1", // Render prod
   },
 ],
