@@ -11,11 +11,16 @@ const options = {
       description: 'API documentation for the Hotel Booking system',
     },
     servers: [
-      {
-        url: 'http://localhost:3000/api/v1',
-        description: 'Local server',
-      },
-    ],
+  {
+    url: 'http://localhost:3000/api/v1',
+    description: 'Local server',
+  },
+  {
+    url: 'https://hotel-booking-f1ei.onrender.com/api/v1',
+    description: 'Render server',
+  },
+],
+
     components: {
       securitySchemes: {
         bearerAuth: {
