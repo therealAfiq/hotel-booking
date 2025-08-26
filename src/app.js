@@ -29,7 +29,7 @@ app.use(limiter);
 // CORS (adjust as needed)
 app.use(cors({
   origin: [
-    'https://hotel-booking-api.onrender.com', // 👈 your Render backend URL
+    'https://hotel-booking-f1ei.onrender.com', // 👈 your Render backend URL
     'http://localhost:3000',
     'http://localhost:5173'
   ],
