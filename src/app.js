@@ -1,4 +1,3 @@
-// src/app.js
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
@@ -17,34 +16,31 @@ const bookingRoutes = require('./routes/booking.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const adminRoutes = require('./routes/admin.routes');
 const healthRoutes = require('./routes/health.routes');
-const paymentController = require('./controllers/payment.controller'); // for webhook
-
+const paymentController = require('./controllers/payment.controller');
 
 const app = express();
 
-// Security + rate-limit
 app.use(helmet());
 app.use(limiter);
 
-// CORS (adjust as needed)
+// ✅ Flexible CORS — works for Render + localhost
 app.use(cors({
-  origin: [
-    'https://hotel-booking-f1ei.onrender.com', // 👈 your Render backend URL
-    'http://localhost:3000',
-    'http://localhost:5173'
-  ],
+  origin: true, // reflect the request origin
   credentials: true,
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
 }));
+app.options('*', cors({ origin: true, credentials: true }));
 
-
-
-// Cookies
 app.use(cookieParser(config.cookieSecret));
 
-// Stripe webhook must be RAW and must come BEFORE express.json()
-app.post('/api/v1/payments/webhook', express.raw({ type: 'application/json' }), paymentController.stripeWebhook);
+// Stripe webhook before JSON parser
+app.post(
+  '/api/v1/payments/webhook',
+  express.raw({ type: 'application/json' }),
+  paymentController.stripeWebhook
+);
 
-// JSON body after webhook
 app.use(express.json());
 
 // Simple request logger
@@ -53,7 +49,7 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Mount API routes
+// Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/rooms', roomRoutes);
@@ -62,13 +58,10 @@ app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api', healthRoutes);
 
-// Health
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
 swaggerDocs(app);
 
-// Error handler (last)
 app.use(errorHandler);
-
 
 module.exports = app;
